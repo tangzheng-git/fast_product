@@ -1,0 +1,8 @@
+class CustomMonitorItemLog(BaseModel):
+    """
+    常规监控脚本日志
+    """
+    item = models.ForeignKey(CustomMonitorItem, db_constraint=False, on_delete=models.PROTECT, verbose_name='测试隶属常规监'
+                                                                                                            '控项')
+    status = models.SmallIntegerField(default=0, verbose_name='状态值', help_text='0:正常值；其他:异常值')
+    log = models.TextField(null=True, verbose_name='日志')
