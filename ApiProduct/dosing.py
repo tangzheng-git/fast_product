@@ -9,6 +9,14 @@ import re
 from api_product import PARAM_DICT
 
 
+def deal_param_func(var_list, params_dict):
+    result_list = []
+    for var_str in var_list:
+        param_create_str = """    :param {}: {}""".format(var_str, params_dict.get(var_str))
+        result_list.append(param_create_str)
+    return result_list
+
+
 def get_model_list(RAW_MATERIAL_FACTORY_MODEL):
     """
     从文件从获取model
@@ -143,7 +151,6 @@ def get_var_info_dict(model_params):
     var_str_dict['var_delete_str'] = ', '.join(var_str_dict['var_delete_list'])
     var_str_dict['var_recover_str'] = ', '.join(var_str_dict['var_recover_list'])
     var_str_dict['var_query_str'] = ', '.join(var_str_dict['var_query_list'])
-
     return var_str_dict
 
 
@@ -164,29 +171,13 @@ def get_param_info_dict(model_info_dict, var_str_dict):
         'page_size': PARAM_DICT.get('page_size'),
         'person': '',
     }
-
     for item in model_info_dict['model_params']:
         params_info_dict[item['name']] = item['verbose']
-
-    for var_str in var_str_dict['var_create_list']:
-        param_create_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
-        param_str_dict['param_create_list'].append(param_create_str)
-
-    for var_str in var_str_dict['var_update_list']:
-        param_update_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
-        param_str_dict['param_update_list'].append(param_update_str)
-
-    for var_str in var_str_dict['var_delete_list']:
-        param_delete_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
-        param_str_dict['param_delete_list'].append(param_delete_str)
-
-    for var_str in var_str_dict['var_recover_list']:
-        param_recover_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
-        param_str_dict['param_recover_list'].append(param_recover_str)
-
-    for var_str in var_str_dict['var_query_list']:
-        param_query_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
-        param_str_dict['param_query_list'].append(param_query_str)
+    param_str_dict['param_create_list'] = deal_param_func(var_str_dict['var_create_list'], params_info_dict)
+    param_str_dict['param_update_list'] = deal_param_func(var_str_dict['var_update_list'], params_info_dict)
+    param_str_dict['param_delete_list'] = deal_param_func(var_str_dict['var_delete_list'], params_info_dict)
+    param_str_dict['param_recover_list'] = deal_param_func(var_str_dict['var_recover_list'], params_info_dict)
+    param_str_dict['param_query_list'] = deal_param_func(var_str_dict['var_query_list'], params_info_dict)
 
     return param_str_dict
 
