@@ -29,6 +29,7 @@ model_list = get_model_list(RAW_MATERIAL_FACTORY_MODEL)
 
 model_info_dict = get_model_info_dict(model_list)
 
+print()
 for item in model_info_dict.items():
     print(item)
 
@@ -39,12 +40,16 @@ foreign_info_dict = get_foreign_info_dict(model_info_dict['model_params'])
 
 var_str_dict = get_var_info_dict(model_info_dict)
 
+print()
 for item in var_str_dict.items():
     print(item)
 
 # 获取函数解释 创建
 param_str_dict = get_param_info_dict(model_info_dict, var_str_dict)
 
+print()
+for item in param_str_dict.items():
+    print(item)
 
 # # 获取函数解释 修改
 # var_param_update = process_param(para_list, model_id, model_str, 1)

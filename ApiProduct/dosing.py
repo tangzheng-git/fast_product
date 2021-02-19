@@ -65,10 +65,10 @@ def get_model_info_dict(model_list):
             except AttributeError:
                 pass
             try:
-                attribute_dict['verbose'] = re.match(r".*?verbose_name=(.*?)[,)]", line).group(1).replace('u', '').replace('"', '').replace("'", '')
                 verbose = re.match(r".*?verbose_name=(.*?)[,)]", line).group(1)
-
-
+                if verbose[0] == 'u':
+                    verbose = verbose[1:]
+                attribute_dict['verbose'] = verbose.replace('"', '').replace("'", '')
             except AttributeError:
                 pass
             try:
@@ -151,12 +151,14 @@ def get_param_info_dict(model_info_dict, var_str_dict):
     param_str_dict = {
         'param_create_list': [],
         'param_update_list': [],
+        'param_delete_list': [],
+        'param_recover_list': [],
         'param_query_list': [],
     }
     params_info_dict = {
         'request': '',
         'org_id': '',
-        model_info_dict['model_id_str']: model_info_dict.get('model_chinese_str'),
+        model_info_dict['model_id_str']: model_info_dict.get('model_chinese_str', ''),
         'is_active': PARAM_DICT.get('is_active'),
         'page_index': PARAM_DICT.get('page_index'),
         'page_size': PARAM_DICT.get('page_size'),
@@ -167,13 +169,24 @@ def get_param_info_dict(model_info_dict, var_str_dict):
         params_info_dict[item['name']] = item['verbose']
 
     for var_str in var_str_dict['var_create_list']:
-        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+        param_create_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
+        param_str_dict['param_create_list'].append(param_create_str)
 
     for var_str in var_str_dict['var_update_list']:
-        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+        param_update_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
+        param_str_dict['param_update_list'].append(param_update_str)
+
+    for var_str in var_str_dict['var_delete_list']:
+        param_delete_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
+        param_str_dict['param_delete_list'].append(param_delete_str)
+
+    for var_str in var_str_dict['var_recover_list']:
+        param_recover_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
+        param_str_dict['param_recover_list'].append(param_recover_str)
 
     for var_str in var_str_dict['var_query_list']:
-        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+        param_query_str = """    :param {}: {}""".format(var_str, params_info_dict.get(var_str))
+        param_str_dict['param_query_list'].append(param_query_str)
 
     return param_str_dict
 
