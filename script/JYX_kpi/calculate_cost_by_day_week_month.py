@@ -1,9 +1,4 @@
-#!/usr/bin/env python
-# encoding: utf-8
-# Date: 2020/12/22
-# file: calculate_cost_by_day_week_month.py
-# Email:
-# Author: 唐政
+# coding=utf-8
 
 import datetime
 import json
@@ -374,6 +369,15 @@ yield_id = 1484
 day_diff_id = 5757
 week_diff_id = 5759
 month_diff_id = 5761
+
+template_cost_yield_deal(now_datetime, cost_id, yield_id, day_diff_id, week_diff_id, month_diff_id)
+
+# 炼铁5#id
+cost_id = 3645
+yield_id = 3647
+day_diff_id = 5959
+week_diff_id = 5961
+month_diff_id = 5963
 
 template_cost_yield_deal(now_datetime, cost_id, yield_id, day_diff_id, week_diff_id, month_diff_id)
 

@@ -6,98 +6,176 @@
 # Author: 唐政
 import re
 
-
 from api_product import PARAM_DICT
 
 
-def process_lis(RAW_MATERIAL_FACTORY_MODEL):
+def get_model_list(RAW_MATERIAL_FACTORY_MODEL):
     """
     从文件从获取model
     :return:
     """
-    model_list = []
-    s = ''
     with open(RAW_MATERIAL_FACTORY_MODEL, 'r', encoding='UTF-8') as f:
-        s = f.read()
-    model_list = s.split('\n')
+        model_txt = f.read()
+    model_list = [line.strip() for line in model_txt.split('\n')]
+
     return model_list
 
 
-def process_params(model_list):
+def get_model_info_dict(model_list):
     """
     生成字段字典
     :param model_list:
     :return:
     """
-    para_list = []
-    model = ''
+    model_info_dict = {}
 
-    for item in model_list:
-        # 符合要求的是字段
-        # 否则是model
-        if len(item.split('=')[0].strip()) > 0 and len(item.split('=')) > 2:
-            var = item.split('=')[0].strip()
-            field = item.split('=')[1][8:].split('(')[0]
-            default = None
-            choices = None
-            verbose = ''
-            foreign = None
+    chinese_model_flag = False
+    for line in model_list:
+        if 'class' in line:
+            model_info_dict['model_upper_str'] = line.replace('class ', '').replace('(BaseModel):', '')
+            model_info_dict['model_lower_str'] = model_info_dict['model_upper_str'].lower()
+            model_info_dict['model_id_str'] = model_info_dict['model_lower_str'] + '_id'
+        elif '"""' in line:
+            chinese_model_flag = not chinese_model_flag
+        elif chinese_model_flag:
+            model_info_dict['model_chinese_str'] = line
+        elif len(line.split('=')[0].strip()) > 0 and len(line.split('=')) > 2:
+            attribute_dict = {
+                'name': None,
+                'field': None,
+                'default': None,
+                'choices': None,
+                'verbose': None,
+                'foreign': None,
+            }
             try:
-                default = re.match(r'.*?default=(.*?),', item).group(1)
+                attribute_dict['name'] = line.split('=')[0].strip()
             except AttributeError:
                 pass
             try:
-                choices = re.match(r'.*?choices=(.*?),', item).group(1)
+                attribute_dict['field'] = line.split('=')[1][8:].split('(')[0]
             except AttributeError:
                 pass
             try:
-                verbose = re.match(r".*?verbose_name=u'(.*?)'", item).group(1)
+                attribute_dict['default'] = re.match(r'.*?default=(.*?),', line).group(1)
             except AttributeError:
                 pass
             try:
-                foreign = re.match(r".*?ForeignKey\((.*?),", item).group(1)
+                attribute_dict['choices'] = re.match(r'.*?choices=(.*?),', line).group(1)
+            except AttributeError:
+                pass
+            try:
+                attribute_dict['verbose'] = re.match(r".*?verbose_name=(.*?)[,)]", line).group(1).replace('u', '').replace('"', '').replace("'", '')
+                verbose = re.match(r".*?verbose_name=(.*?)[,)]", line).group(1)
+
+
+            except AttributeError:
+                pass
+            try:
+                attribute_dict['foreign'] = re.match(r".*?ForeignKey\((.*?),", line).group(1)
             except AttributeError:
                 pass
             # field处理
-            if field == "DecimalField":
-                field = "decimal"
-            elif field == "IntegerField":
-                field = "int"
-            elif field == "ForeignKey":
-                var = var + "_id"
-            para_list.append(dict(var=var, field=field, choices=choices, default=default, verbose=verbose, foreign=foreign))
-        else:
-            try:
-                model = re.match(r'.*?class (.*?)\(BaseModel\)', item).group(1)
-            except AttributeError:
-                pass
-
-    return model, para_list, [dic['var'] for dic in para_list]
+            if attribute_dict['field'] == "DecimalField":
+                attribute_dict['type'] = "decimal"
+            elif attribute_dict['field'] == "IntegerField":
+                attribute_dict['type'] = "int"
+            elif attribute_dict['field'] == "ForeignKey" and attribute_dict.get('name', None):
+                attribute_dict['type'] = attribute_dict['name'] + "_id"
+            model_info_dict.setdefault('model_params', []).append(attribute_dict)
+    return model_info_dict
 
 
-def process_str(para_list, model_id, flag=0):
-    var_list = ['request', 'org_id']
+def get_foreign_info_dict(model_params):
+    foreign_info_dict = {
+        'foreign_list': [],
+        'foreign_dot_str': '',
+        'foreign_get_str': '',
+        'foreign_try_str': '',
+    }
+    for item in model_params:
+        if item['foreign'] is not None:
+            foreign_get_str = """
+        {}.objects.get(pk={}, is_active=True)""".format(item["foreign"], item["type"])
+            foreign_try_str = """
+        except {}.DoesNotExist:
+                return get_result(False, u"{}信息不存在") """.format(item["foreign"], item["verbose"])
 
-    if flag == 1:
-        var_list.append(model_id)
+            foreign_info_dict['foreign_list'].append(item['foreign'])
+            if foreign_info_dict['foreign_dot_str'] == '':
+                foreign_info_dict['foreign_dot_str'] = item['foreign']
+            else:
+                foreign_info_dict['foreign_dot_str'] = foreign_info_dict['foreign_dot_str'] + ', ' + item['foreign']
+            foreign_info_dict['foreign_get_str'] = foreign_info_dict['foreign_get_str'] + foreign_get_str
+            foreign_info_dict['foreign_try_str'] = foreign_info_dict['foreign_try_str'] + foreign_try_str
 
-    if flag == 2:
-        for dic in para_list:
-            if dic['field'] == "decimal":
-                continue
-            elif dic['field'] == "int" and dic['choices'] is None:
-                continue
-            var_list.append(dic['var'])
-    else:
-        for dic in para_list:
-            var_list.append(dic['var'])
+    return foreign_info_dict
 
-    if flag == 2:
-        var_list.append('is_active')
-        var_list.append('page_index')
-        var_list.append('page_size')
-    var_list.append('person')
-    return ', '.join(var_list)
+
+def get_var_info_dict(model_params):
+    var_str_dict = {
+        'var_create_list': ['request'],
+        'var_update_list': ['request', 'org_id', model_params['model_id_str']],
+        'var_delete_list': ['request', 'org_id', model_params['model_id_str'], 'person'],
+        'var_recover_list': ['request', 'org_id', model_params['model_id_str'], 'person'],
+        'var_query_list': ['request'],
+    }
+
+    for item in model_params['model_params']:
+
+        var_str_dict['var_create_list'].append(item['name'])
+        var_str_dict['var_update_list'].append(item['name'])
+
+        if item.get('type') == "decimal":
+            continue
+        elif item.get('type') == "int" and item.get('choices') is None:
+            continue
+        var_str_dict['var_query_list'].append(item['name'])
+
+    var_str_dict['var_query_list'].extend(['is_active', 'page_index', 'page_size'])
+
+    var_str_dict['var_create_list'].append('person')
+    var_str_dict['var_update_list'].append('person')
+    var_str_dict['var_query_list'].append('person')
+
+    var_str_dict['var_create_str'] = ', '.join(var_str_dict['var_create_list'])
+    var_str_dict['var_update_str'] = ', '.join(var_str_dict['var_update_list'])
+    var_str_dict['var_delete_str'] = ', '.join(var_str_dict['var_delete_list'])
+    var_str_dict['var_recover_str'] = ', '.join(var_str_dict['var_recover_list'])
+    var_str_dict['var_query_str'] = ', '.join(var_str_dict['var_query_list'])
+
+    return var_str_dict
+
+
+def get_param_info_dict(model_info_dict, var_str_dict):
+    param_str_dict = {
+        'param_create_list': [],
+        'param_update_list': [],
+        'param_query_list': [],
+    }
+    params_info_dict = {
+        'request': '',
+        'org_id': '',
+        model_info_dict['model_id_str']: model_info_dict.get('model_chinese_str'),
+        'is_active': PARAM_DICT.get('is_active'),
+        'page_index': PARAM_DICT.get('page_index'),
+        'page_size': PARAM_DICT.get('page_size'),
+        'person': '',
+    }
+
+    for item in model_info_dict['model_params']:
+        params_info_dict[item['name']] = item['verbose']
+
+    for var_str in var_str_dict['var_create_list']:
+        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+
+    for var_str in var_str_dict['var_update_list']:
+        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+
+    for var_str in var_str_dict['var_query_list']:
+        print("""    :param {}: {}""".format(var_str, params_info_dict.get(var_str)))
+
+    return param_str_dict
 
 
 def process_param(para_list, model_id, model_str, flag=0):
@@ -140,44 +218,6 @@ def process_param(para_list, model_id, model_str, flag=0):
     var_param = '\n'.join(lis)
     return var_param
 
-
-def process_foreignkey(para_list):
-    foreign_list = []
-    for item in para_list:
-        if item['foreign'] is not None:
-            foreign_list.append(item)
-    return foreign_list
-
-
-def process_foreign_list(foreign_dict_list):
-    foreign_list = []
-    for item in foreign_dict_list:
-        foreign_list.append(item['foreign'])
-    return ', '.join(foreign_list)
-
-
-def process_foreignget(foreign_list):
-    lis = []
-
-    for item in foreign_list:
-        s = """
-        {}.objects.get(pk={}, is_active=True)""".format(item["foreign"], item["var"])
-        lis.append(s)
-    foreign_get_str = ''.join(lis)
-    return foreign_get_str
-
-
-def process_foreigntry(foreign_list):
-    lis = []
-    for item in foreign_list:
-        s = """
-    except {}.DoesNotExist:
-        return get_result(False, u"{}信息不存在") """.format(item["foreign"], item["verbose"])
-        lis.append(s)
-    foreign_get_str = ''.join(lis)
-    return foreign_get_str
-
-
 def process_json(var_list):
     lis = []
     for item in var_list:
@@ -185,7 +225,6 @@ def process_json(var_list):
         lis.append(s)
     var_json = "{\n" + '\n'.join(lis)[:-2] + "  }"
     return var_json
-
 
 def process_if(para_list):
     lis = []
@@ -215,7 +254,6 @@ def process_if(para_list):
     var_if = ''.join(lis)
 
     return var_if
-
 
 def process_query(para_list):
     lis = []
@@ -252,7 +290,6 @@ def process_query(para_list):
 
     return var_query
 
-
 def process_check(para_list, model, model_low, model_str, app_name, model_upper, flag=0):
     lis = ['org_id=("组织id", "r,liyu_organization.Organization__pk")']
 
@@ -272,7 +309,8 @@ def process_check(para_list, model, model_low, model_str, app_name, model_upper,
             if dic['field'] == 'int':
                 if dic['choices'] is not None:
                     # 有选择的
-                    s = '  {}=("{}", "{}", None, {}.{})'.format(dic['var'], dic['verbose'], dic['field'], model, dic['choices'])
+                    s = '  {}=("{}", "{}", None, {}.{})'.format(dic['var'], dic['verbose'], dic['field'], model,
+                                                                dic['choices'])
                 else:
                     if flag == 2:
                         continue

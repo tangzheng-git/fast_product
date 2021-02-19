@@ -4,20 +4,17 @@
 # file: acquire.py
 # Email:
 # Author: 唐政
-from api_product import process_lis
-from api_product import process_params
-from api_product import process_str
-from api_product import process_param
-from api_product import process_foreignkey
-from api_product import process_foreign_list
-from api_product import process_foreignget
-from api_product import process_foreigntry
-from api_product import process_json
-from api_product import process_if
-from api_product import process_query
-from api_product import process_check
-from api_product import RAW_MATERIAL_FACTORY_MODEL
-from api_product import api
+from ApiProduct import get_model_list
+from ApiProduct import get_model_info_dict
+from ApiProduct import get_var_info_dict
+from ApiProduct import get_param_info_dict
+from ApiProduct import get_foreign_info_dict
+from ApiProduct import process_json
+from ApiProduct import process_if
+from ApiProduct import process_query
+from ApiProduct import process_check
+from ApiProduct import RAW_MATERIAL_FACTORY_MODEL
+from ApiProduct import api
 import datetime
 
 app_name = "custom_monitor"
@@ -28,36 +25,27 @@ now = datetime.datetime.now().date()
 do_thing = """by:{} at:{}""".format(user, now)
 
 # 获取原料
-model_list = process_lis(RAW_MATERIAL_FACTORY_MODEL)
+model_list = get_model_list(RAW_MATERIAL_FACTORY_MODEL)
+
+model_info_dict = get_model_info_dict(model_list)
+
+for item in model_info_dict.items():
+    print(item)
+
+foreign_info_dict = get_foreign_info_dict(model_info_dict['model_params'])
+
+# for item in foreign_info_dict.items():
+#     print(item[1])
+
+var_str_dict = get_var_info_dict(model_info_dict)
+
+for item in var_str_dict.items():
+    print(item)
+
+# 获取函数解释 创建
+param_str_dict = get_param_info_dict(model_info_dict, var_str_dict)
 
 
-# # 获取二次加工
-# model_upper, para_list, var_list = process_params(model_list)
-#
-# model_low = model_upper.lower()
-# model_id = model_low + '_id'
-#
-# # 获取外键dict列表
-# foreign_dict_list = process_foreignkey(para_list)
-#
-# # 获取外键
-# foreign_str = process_foreign_list(foreign_dict_list)
-# # 外键get
-# foreign_get_str = process_foreignget(foreign_dict_list)
-# # 外键捕获
-# foreign_except_str = process_foreigntry(foreign_dict_list)
-#
-#
-# # 获取 参数var, var, var...
-# var_str_create = process_str(para_list, model_id)
-# # 获取 参数var, var, var... update
-# var_str_update = process_str(para_list, model_id, 1)
-# # 获取 参数var, var, var... query
-# var_str_query = process_str(para_list, model_id, 2)
-#
-#
-# # 获取函数解释 创建
-# var_param_create = process_param(para_list, model_id, model_str)
 # # 获取函数解释 修改
 # var_param_update = process_param(para_list, model_id, model_str, 1)
 # # 获取函数解释 查询
