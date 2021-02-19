@@ -10,9 +10,9 @@ from ApiProduct import get_var_info_dict
 from ApiProduct import get_param_info_dict
 from ApiProduct import get_foreign_info_dict
 from ApiProduct import get_field_info_dict
+from ApiProduct import get_var_if_dict
 from ApiProduct import process_json
-from ApiProduct import process_if
-from ApiProduct import process_query
+from ApiProduct import get_param_check_dict
 from ApiProduct import process_check
 from ApiProduct import RAW_MATERIAL_FACTORY_MODEL
 from ApiProduct import api
@@ -36,15 +36,14 @@ for item in model_info_dict.items():
 
 field_info_dict = get_field_info_dict(model_info_dict)
 
-print()
-for item in field_info_dict.items():
-    print(item)
-
+# print()
+# for item in field_info_dict.items():
+#     print(item)
 
 foreign_info_dict = get_foreign_info_dict(model_info_dict['model_params'])
 
-# for item in foreign_info_dict.items():
-#     print(item[1])
+for item in foreign_info_dict.items():
+    print(item)
 
 var_str_dict = get_var_info_dict(model_info_dict)
 
@@ -52,26 +51,29 @@ print()
 for item in var_str_dict.items():
     print(item)
 
-# 获取函数解释 创建
 param_str_dict = get_param_info_dict(field_info_dict, var_str_dict)
 
-print()
-for item in param_str_dict.items():
-    print(item[1])
+# print()
+# for item in param_str_dict.items():
+#     print(item)
 
-# # 获取函数解释 修改
-# var_param_update = process_param(para_list, model_id, model_str, 1)
-# # 获取函数解释 查询
-# var_param_query = process_param(para_list, model_id, model_str, 2)
-#
-# # 获取{"var":""}
-# var_json = process_json(var_list)
-#
-# # 获取if {} is not None
-# var_if = process_if(para_list)
-# # 获取查询
-# var_if_query = process_query(para_list)
-#
+var_if_dict = get_var_if_dict(model_info_dict)
+
+# print()
+# for item in var_if_dict.items():
+#     for i in item[1]:
+#         print(i)
+#     print()
+
+param_check_dict = get_param_check_dict(model_info_dict, field_info_dict, var_str_dict)
+
+
+print()
+for item in param_check_dict.items():
+    for i in item[1]:
+        print(i)
+    print()
+
 # # 验证参数 var=("ver", "")
 # var_check_create = process_check(para_list, model_upper, model_low, model_str, app_name, model_upper)
 # # 验证参数 var=("ver", "") update
