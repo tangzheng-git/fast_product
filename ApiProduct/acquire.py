@@ -9,6 +9,7 @@ from ApiProduct import get_model_info_dict
 from ApiProduct import get_var_info_dict
 from ApiProduct import get_param_info_dict
 from ApiProduct import get_foreign_info_dict
+from ApiProduct import get_field_info_dict
 from ApiProduct import process_json
 from ApiProduct import process_if
 from ApiProduct import process_query
@@ -33,6 +34,13 @@ print()
 for item in model_info_dict.items():
     print(item)
 
+field_info_dict = get_field_info_dict(model_info_dict)
+
+print()
+for item in field_info_dict.items():
+    print(item)
+
+
 foreign_info_dict = get_foreign_info_dict(model_info_dict['model_params'])
 
 # for item in foreign_info_dict.items():
@@ -45,11 +53,11 @@ for item in var_str_dict.items():
     print(item)
 
 # 获取函数解释 创建
-param_str_dict = get_param_info_dict(model_info_dict, var_str_dict)
+param_str_dict = get_param_info_dict(field_info_dict, var_str_dict)
 
 print()
 for item in param_str_dict.items():
-    print(item)
+    print(item[1])
 
 # # 获取函数解释 修改
 # var_param_update = process_param(para_list, model_id, model_str, 1)

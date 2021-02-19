@@ -9,11 +9,20 @@ import re
 from api_product import PARAM_DICT
 
 
-def deal_param_func(var_list, params_dict):
+def deal_list_to_str(_list, _start,  _middle, _end):
+    return _start + _middle.join(_list) + _end
+
+
+def deal_param_func(var_list, params_dict, _start, _end):
     result_list = []
+    if _start is not None:
+        _start.format()
+        result_list.extend(_start)
     for var_str in var_list:
         param_create_str = """    :param {}: {}""".format(var_str, params_dict.get(var_str))
         result_list.append(param_create_str)
+    if _end is not None:
+        result_list.extend(_end)
     return result_list
 
 
@@ -91,7 +100,24 @@ def get_model_info_dict(model_list):
             elif attribute_dict['field'] == "ForeignKey" and attribute_dict.get('name', None):
                 attribute_dict['type'] = attribute_dict['name'] + "_id"
             model_info_dict.setdefault('model_params', []).append(attribute_dict)
+            model_info_dict.setdefault('model_params_list', []).append(attribute_dict['name'])
+            model_info_dict.setdefault('model_params_dict', {}).update({attribute_dict['name']:attribute_dict['verbose']})
+
     return model_info_dict
+
+
+def get_field_info_dict(model_info_dict):
+    field_info_dict = {
+        'request': '',
+        'org_id': '',
+        model_info_dict['model_id_str']: model_info_dict.get('model_chinese_str', ''),
+        'is_active': PARAM_DICT.get('is_active'),
+        'page_index': PARAM_DICT.get('page_index'),
+        'page_size': PARAM_DICT.get('page_size'),
+        'person': '',
+    }
+    field_info_dict.update(model_info_dict['model_params_dict'])
+    return field_info_dict
 
 
 def get_foreign_info_dict(model_params):
@@ -120,16 +146,16 @@ def get_foreign_info_dict(model_params):
     return foreign_info_dict
 
 
-def get_var_info_dict(model_params):
+def get_var_info_dict(model_info_dict):
     var_str_dict = {
-        'var_create_list': ['request'],
-        'var_update_list': ['request', 'org_id', model_params['model_id_str']],
-        'var_delete_list': ['request', 'org_id', model_params['model_id_str'], 'person'],
-        'var_recover_list': ['request', 'org_id', model_params['model_id_str'], 'person'],
+        'var_create_list': ['request', 'org_id'],
+        'var_update_list': ['request', 'org_id', model_info_dict['model_id_str']],
+        'var_delete_list': ['request', 'org_id', model_info_dict['model_id_str'], 'person'],
+        'var_recover_list': ['request', 'org_id', model_info_dict['model_id_str'], 'person'],
         'var_query_list': ['request'],
     }
 
-    for item in model_params['model_params']:
+    for item in model_info_dict['model_params']:
 
         var_str_dict['var_create_list'].append(item['name'])
         var_str_dict['var_update_list'].append(item['name'])
@@ -154,73 +180,33 @@ def get_var_info_dict(model_params):
     return var_str_dict
 
 
-def get_param_info_dict(model_info_dict, var_str_dict):
+def get_param_info_dict(field_info_dict, var_str_dict):
+    _dot = '    """'
     param_str_dict = {
-        'param_create_list': [],
-        'param_update_list': [],
-        'param_delete_list': [],
-        'param_recover_list': [],
-        'param_query_list': [],
+        'param_create_list': [_dot],
+        'param_update_list': [_dot],
+        'param_delete_list': [_dot],
+        'param_recover_list': [_dot],
+        'param_query_list': [_dot],
     }
-    params_info_dict = {
-        'request': '',
-        'org_id': '',
-        model_info_dict['model_id_str']: model_info_dict.get('model_chinese_str', ''),
-        'is_active': PARAM_DICT.get('is_active'),
-        'page_index': PARAM_DICT.get('page_index'),
-        'page_size': PARAM_DICT.get('page_size'),
-        'person': '',
-    }
-    for item in model_info_dict['model_params']:
-        params_info_dict[item['name']] = item['verbose']
-    param_str_dict['param_create_list'] = deal_param_func(var_str_dict['var_create_list'], params_info_dict)
-    param_str_dict['param_update_list'] = deal_param_func(var_str_dict['var_update_list'], params_info_dict)
-    param_str_dict['param_delete_list'] = deal_param_func(var_str_dict['var_delete_list'], params_info_dict)
-    param_str_dict['param_recover_list'] = deal_param_func(var_str_dict['var_recover_list'], params_info_dict)
-    param_str_dict['param_query_list'] = deal_param_func(var_str_dict['var_query_list'], params_info_dict)
+    param_list_end = ['    :return: ', '    """']
+    param_str_dict['param_create_list'] = deal_param_func(var_str_dict['var_create_list'], field_info_dict, ['\t创建{}'], param_list_end)
+    param_str_dict['param_update_list'] = deal_param_func(var_str_dict['var_update_list'], field_info_dict, ['\t更新{}'], param_list_end)
+    param_str_dict['param_delete_list'] = deal_param_func(var_str_dict['var_delete_list'], field_info_dict, ['\t删除{}'], param_list_end)
+    param_str_dict['param_recover_list'] = deal_param_func(var_str_dict['var_recover_list'], field_info_dict, ['\t恢复{}'], param_list_end)
+    param_str_dict['param_query_list'] = deal_param_func(var_str_dict['var_query_list'], field_info_dict, ['\t查询{}'], param_list_end)
+
+    param_str_start = ''
+    param_str_middle = '\n'
+    param_str_end = ''
+    param_str_dict['param_create_str'] = deal_list_to_str(param_str_dict['param_create_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_update_str'] = deal_list_to_str(param_str_dict['param_update_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_delete_str'] = deal_list_to_str(param_str_dict['param_delete_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_recover_str'] = deal_list_to_str(param_str_dict['param_recover_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_query_str'] = deal_list_to_str(param_str_dict['param_query_list'], param_str_start, param_str_middle, param_str_end)
 
     return param_str_dict
 
-
-def process_param(para_list, model_id, model_str, flag=0):
-    lis = []
-
-    s = """:param request: """
-    lis.append(s)
-    s = """    :param org_id: {}""".format(PARAM_DICT.get('org_id'))
-    lis.append(s)
-    if flag == 1:
-        s = """    :param {}: {}id""".format(model_id, model_str)
-        lis.append(s)
-
-    if flag == 2:
-        for item in para_list:
-            if item['field'] == "decimal":
-                continue
-            elif item['field'] == "int" and item['choices'] is None:
-                continue
-            s = """    :param {}:{}""".format(item['var'], item['verbose'])
-            lis.append(s)
-    else:
-        for item in para_list:
-            s = """    :param {}:{}""".format(item['var'], item['verbose'])
-            lis.append(s)
-
-    if flag == 2:
-        s = """    :param is_active: {}""".format(PARAM_DICT.get('is_active'))
-        lis.append(s)
-        s = """    :param page_index: {}""".format(PARAM_DICT.get('page_index'))
-        lis.append(s)
-        s = """    :param page_size: {}""".format(PARAM_DICT.get('page_size'))
-        lis.append(s)
-
-    s = """    :param person:""".format(PARAM_DICT.get('page_size'))
-    lis.append(s)
-    s = """    :return:""".format(PARAM_DICT.get('page_size'))
-    lis.append(s)
-
-    var_param = '\n'.join(lis)
-    return var_param
 
 def process_json(var_list):
     lis = []

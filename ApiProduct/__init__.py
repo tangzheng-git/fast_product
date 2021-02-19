@@ -29,6 +29,7 @@ from ApiProduct.dosing import get_model_info_dict
 from ApiProduct.dosing import get_var_info_dict
 from ApiProduct.dosing import get_param_info_dict
 from ApiProduct.dosing import get_foreign_info_dict
+from ApiProduct.dosing import get_field_info_dict
 from ApiProduct.dosing import process_json
 from ApiProduct.dosing import process_if
 from ApiProduct.dosing import process_query
