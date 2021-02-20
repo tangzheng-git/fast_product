@@ -6,17 +6,17 @@
 # Author: 唐政 
 
 from ApiProduct.acquire import para_dict
-# from ApiProduct.acquire import write
+from ApiProduct.dosing import write
 
 
-para_dict['app_name'] = ''
-para_dict['model_str'] = ''
+para_dict['app_name'] = 'liyu_permission'
+para_dict['model_str'] = '接口'
 para_dict['user'] = '唐政'
 
 # print()
 # for item in para_dict.items():
 #     print(item)
 
-
-# write(para_dict)
+write(para_dict)
+print('完成')
 

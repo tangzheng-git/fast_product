@@ -32,7 +32,7 @@ def deal_check_func(var_list, field_info_dict, model_info_dict):
         if var_str == 'org_id':
             s = '{}=("{}", "r,liyu_organization.Organization__pk")'.format(var_str, field_info_dict[var_str])
         elif var_str == model_info_dict['model_id_str']:
-            s = '{}=("{}", "r,{{}}.{}__pk")'.format(var_str, model_info_dict.get('model_chinese_str', ''), '', model_info_dict['model_upper_str'])
+            s = '{}=("{}", "r,{{app_name}}.{}__pk")'.format(var_str, model_info_dict.get('model_chinese_str', ''), model_info_dict['model_upper_str'])
         elif var_str == 'is_active':
             s = 'is_active=("状态", "b")'
         elif var_str == 'page_index':
@@ -44,9 +44,9 @@ def deal_check_func(var_list, field_info_dict, model_info_dict):
         elif field_info['field'] in ['IntegerField', 'FloatField', 'BooleanField']:
             s = '{}=("{}", "{},{}")'.format(var_str, field_info_dict[var_str], field_info['null'], field_info['type'])
         elif field_info['field'] == 'ForeignKey':
-            s = '{}=("{}", "{},{{}}.{}__pk")'.format(var_str, field_info_dict[var_str], field_info['null'], '', field_info['foreign'])
+            s = '{}=("{}", "{},{{app_name}}.{}__pk")'.format(var_str, field_info_dict[var_str], field_info['null'], field_info['foreign'])
         elif field_info['field'] == 'ManyToManyField':
-            s = '{}=("{}", "{},[{{}}.{}__pk]")'.format(var_str, field_info_dict[var_str], field_info['null'], '', field_info['foreign'])
+            s = '{}=("{}", "{},[{{app_name}}.{}__pk]")'.format(var_str, field_info_dict[var_str], field_info['null'], field_info['foreign'])
         else:
             s = '{}=("{}", "{}")'.format(var_str, field_info_dict[var_str], field_info['null'])
         if 'False' in s or 'False,' in s:
@@ -383,3 +383,10 @@ def process_json(var_list):
         lis.append(s)
     var_json = "{\n" + '\n'.join(lis)[:-2] + "  }"
     return var_json
+
+
+def write(para_dict):
+    app_name = para_dict['app_name']
+    with open('../views_{}.py'.format(para_dict['model_lower_str']), 'w+', encoding='UTF-8') as f:
+        from ApiProduct import api
+        f.write(api.format(**para_dict).format(app_name=app_name))

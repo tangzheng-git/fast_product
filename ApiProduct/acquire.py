@@ -104,5 +104,7 @@ para_dict = {
 }
 
 
-with open('../views_{}.py'.format(para_dict['model_lower_str']), 'w+', encoding='UTF-8') as f:
-    f.write(api.format(**para_dict))
+# with open('../views_{}.py'.format(para_dict['model_lower_str']), 'w+', encoding='UTF-8') as f:
+#     f.write(api.format(**para_dict))
+
+
