@@ -29,29 +29,33 @@ def deal_check_func(var_list, field_info_dict, model_info_dict):
     result_list = []
     for var_str in var_list:
         field_info = model_info_dict['model_params_info_dict'].get(var_str)
-        print(var_str)
         if var_str == 'org_id':
             s = '{}=("{}", "r,liyu_organization.Organization__pk")'.format(var_str, field_info_dict[var_str])
         elif var_str == model_info_dict['model_id_str']:
-            s = '{}=("{}", "r,{{}}.{}__pk")'.format(var_str, model_info_dict.get('model_chinese_str'), '',
-                                                    model_info_dict['model_upper_str'])
+            s = '{}=("{}", "r,{{}}.{}__pk")'.format(var_str, model_info_dict.get('model_chinese_str', ''), '', model_info_dict['model_upper_str'])
+        elif var_str == 'is_active':
+            s = 'is_active=("状态", "b")'
+        elif var_str == 'page_index':
+            s = 'page_index=("页号", "int", 1)'
+        elif var_str == 'page_size':
+            s = 'page_size=("页大小", "int", 20)'
         elif field_info['field'] == 'IntegerField' and field_info['choices'] is not None:
-            s = '{}=("{}", "{},{}", None, {}.{})'.format(var_str, field_info_dict[var_str], field_info['null'],
-                                                         field_info['type'], model_info_dict['model_upper_str'],
-                                                         field_info['choices'])
+            s = '{}=("{}", "{},{}", None, {}.{})'.format(var_str, field_info_dict[var_str], field_info['null'], field_info['type'], model_info_dict['model_upper_str'], field_info['choices'])
         elif field_info['field'] in ['IntegerField', 'FloatField', 'BooleanField']:
             s = '{}=("{}", "{},{}")'.format(var_str, field_info_dict[var_str], field_info['null'], field_info['type'])
         elif field_info['field'] == 'ForeignKey':
-            s = '{}=("{}", "{},{{}}.{}__pk")'.format(var_str, field_info_dict[var_str], field_info['null'], '',
-                                                     field_info['foreign'])
+            s = '{}=("{}", "{},{{}}.{}__pk")'.format(var_str, field_info_dict[var_str], field_info['null'], '', field_info['foreign'])
         elif field_info['field'] == 'ManyToManyField':
-            s = '{}=("{}", "{},[{{}}.{}__pk]")'.format(var_str, field_info_dict[var_str], field_info['null'], '',
-                                                       field_info['foreign'])
+            s = '{}=("{}", "{},[{{}}.{}__pk]")'.format(var_str, field_info_dict[var_str], field_info['null'], '', field_info['foreign'])
         else:
             s = '{}=("{}", "{}")'.format(var_str, field_info_dict[var_str], field_info['null'])
-
+        if 'False' in s or 'False,' in s:
+            s = s.replace('False,', '').replace('False', '')
+        if 'True' in s:
+            s = s.replace('True', '')
         result_list.append(s)
     return result_list
+
 
 def get_model_list(RAW_MATERIAL_FACTORY_MODEL):
     """
@@ -71,7 +75,9 @@ def get_model_info_dict(model_list):
     :param model_list:
     :return:
     """
-    model_info_dict = {}
+    model_info_dict = {
+        'model_chinese_str': '',
+    }
 
     chinese_model_flag = False
     for line in model_list:
@@ -143,8 +149,7 @@ def get_model_info_dict(model_list):
 
             model_info_dict.setdefault('model_params', []).append(attribute_dict)
             model_info_dict.setdefault('model_params_list', []).append(attribute_dict['name'])
-            model_info_dict.setdefault('model_params_dict', {}).update(
-                {attribute_dict['name']: attribute_dict['verbose']})
+            model_info_dict.setdefault('model_params_dict', {}).update({attribute_dict['name']: attribute_dict['verbose']})
             model_info_dict.setdefault('model_params_info_dict', {}).update({attribute_dict['name']: attribute_dict})
 
     return model_info_dict
@@ -173,17 +178,16 @@ def get_foreign_info_dict(model_params):
     }
     for item in model_params:
         if item['foreign'] is not None:
-            foreign_get_str = """
-        {}.objects.get(pk={}, is_active=True)""".format(item["foreign"], item["name"])
-            foreign_try_str = """
-        except {}.DoesNotExist:
-                return get_result(False, u"{}信息不存在") """.format(item["foreign"], item["verbose"])
+            foreign_get_str = '    {}.objects.get(pk={}, is_active=True)'.format(item["foreign"], item["name"])
+            foreign_try_str = '    except {}.DoesNotExist:\n        return get_result(False, u"{}信息不存在")'.format(item["foreign"], item["verbose"])
 
             foreign_info_dict['foreign_list'].append(item['foreign'])
+
             if foreign_info_dict['foreign_dot_str'] == '':
                 foreign_info_dict['foreign_dot_str'] = item['foreign']
             else:
                 foreign_info_dict['foreign_dot_str'] = foreign_info_dict['foreign_dot_str'] + ', ' + item['foreign']
+
             foreign_info_dict['foreign_get_str'] = foreign_info_dict['foreign_get_str'] + foreign_get_str
             foreign_info_dict['foreign_try_str'] = foreign_info_dict['foreign_try_str'] + foreign_try_str
 
@@ -206,7 +210,9 @@ def get_var_info_dict(model_info_dict):
 
         if item['field'] == "DecimalField":
             continue
-        elif item['field'] == "IntegerField" and item['choices']:
+        elif item['field'] == "ManyToManyField":
+            continue
+        elif item['field'] in ["IntegerField", "FloatField"] and item['choices'] is None:
             continue
         var_str_dict['var_query_list'].append(item['name'])
 
@@ -225,7 +231,7 @@ def get_var_info_dict(model_info_dict):
 
 
 def get_param_info_dict(field_info_dict, var_str_dict):
-    _dot = '    """'
+    _dot = ''
     param_str_dict = {
         'param_create_list': [_dot],
         'param_update_list': [_dot],
@@ -233,33 +239,24 @@ def get_param_info_dict(field_info_dict, var_str_dict):
         'param_recover_list': [_dot],
         'param_query_list': [_dot],
     }
-    param_list_end = ['    :return: ', '    """']
-    param_str_dict['param_create_list'] = deal_param_func(var_str_dict['var_create_list'], field_info_dict, ['\t创建{}'],
-                                                          param_list_end)
-    param_str_dict['param_update_list'] = deal_param_func(var_str_dict['var_update_list'], field_info_dict, ['\t更新{}'],
-                                                          param_list_end)
-    param_str_dict['param_delete_list'] = deal_param_func(var_str_dict['var_delete_list'], field_info_dict, ['\t删除{}'],
-                                                          param_list_end)
-    param_str_dict['param_recover_list'] = deal_param_func(var_str_dict['var_recover_list'], field_info_dict,
-                                                           ['\t恢复{}'], param_list_end)
-    param_str_dict['param_query_list'] = deal_param_func(var_str_dict['var_query_list'], field_info_dict, ['\t查询{}'],
-                                                         param_list_end)
+    param_list_end = ['    :return: ']
+    param_str_dict['param_create_list'] = deal_param_func(var_str_dict['var_create_list'], field_info_dict, '', param_list_end)
+    param_str_dict['param_update_list'] = deal_param_func(var_str_dict['var_update_list'], field_info_dict, '', param_list_end)
+    param_str_dict['param_delete_list'] = deal_param_func(var_str_dict['var_delete_list'], field_info_dict, '', param_list_end)
+    param_str_dict['param_recover_list'] = deal_param_func(var_str_dict['var_recover_list'], field_info_dict, '', param_list_end)
+    param_str_dict['param_query_list'] = deal_param_func(var_str_dict['var_query_list'], field_info_dict, '', param_list_end)
 
     param_str_start = ''
     param_str_middle = '\n'
     param_str_end = ''
-    param_str_dict['param_create_str'] = deal_list_to_str(param_str_dict['param_create_list'], param_str_start,
-                                                          param_str_middle, param_str_end)
-    param_str_dict['param_update_str'] = deal_list_to_str(param_str_dict['param_update_list'], param_str_start,
-                                                          param_str_middle, param_str_end)
-    param_str_dict['param_delete_str'] = deal_list_to_str(param_str_dict['param_delete_list'], param_str_start,
-                                                          param_str_middle, param_str_end)
-    param_str_dict['param_recover_str'] = deal_list_to_str(param_str_dict['param_recover_list'], param_str_start,
-                                                           param_str_middle, param_str_end)
-    param_str_dict['param_query_str'] = deal_list_to_str(param_str_dict['param_query_list'], param_str_start,
-                                                         param_str_middle, param_str_end)
+    param_str_dict['param_create_str'] = deal_list_to_str(param_str_dict['param_create_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_update_str'] = deal_list_to_str(param_str_dict['param_update_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_delete_str'] = deal_list_to_str(param_str_dict['param_delete_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_recover_str'] = deal_list_to_str(param_str_dict['param_recover_list'], param_str_start, param_str_middle, param_str_end)
+    param_str_dict['param_query_str'] = deal_list_to_str(param_str_dict['param_query_list'], param_str_start, param_str_middle, param_str_end)
 
     return param_str_dict
+
 
 def get_var_if_dict(model_info_dict):
     var_if_dict = {
@@ -269,12 +266,11 @@ def get_var_if_dict(model_info_dict):
     for var_str in model_info_dict['model_params_info_dict'].keys():
         field_info = model_info_dict['model_params_info_dict'][var_str]
         if field_info['field'] == 'ForeignKey':
-            s = "{1}if {0} is not None:{2}{1}{3}.objects.get(pk={0}, is_active=True){2}{1}obj.{0} = {0}" \
-                .format(var_str + '_id', '\t\t', '\n\t', field_info['foreign'])
+            s = "{1}if {0} is not None:{2}{1}{3}.objects.get(pk={0}, is_active=True){2}{1}obj.{0} = {0}".format(var_str, '        ', '\n    ', field_info['foreign'])
         elif field_info['field'] in ['IntegerField', 'FloatField', 'BooleanField']:
-            s = "{1}if {0} is not None:{2}{1}obj.{0} = {0}".format(var_str, '\t\t', '\n\t')
+            s = "{1}if {0} is not None:{2}{1}obj.{0} = {0}".format(var_str, '        ', '\n    ')
         else:
-            s = "{1}if {0}:{2}{1}obj.{0} = {0}".format(var_str, '\t\t', '\n\t')
+            s = "{1}if {0}:{2}{1}obj.{0} = {0}".format(var_str, '        ', '\n    ')
 
         var_if_dict['var_if_common'].append(s)
 
@@ -282,42 +278,53 @@ def get_var_if_dict(model_info_dict):
         field_info = model_info_dict['model_params_info_dict'][var_str]
         if field_info['field'] == "DecimalField":
             continue
+        elif field_info['field'] == "ManyToManyField":
+            continue
         elif field_info['field'] in ["IntegerField", "FloatField"] and field_info['choices'] is None:
             continue
-        elif (field_info['field'] in ["IntegerField", "FloatField"] and field_info['choices'] is not None) or \
-                field_info['field'] == 'BooleanField':
-            s = "{1}if {0} is not None:{2}{1}query = query.filter({0}={0})".format(var_str, '\t\t', '\n\t')
+        elif (field_info['field'] in ["IntegerField", "FloatField"] and field_info['choices']) or field_info['field'] == 'BooleanField':
+            s = "{1}if {0} is not None:{2}{1}query = query.filter({0}={0})".format(var_str, '    ', '\n    ')
         elif field_info['field'] == 'ForeignKey':
-            s = "{1}if {0}:{2}{1}query = query.filter({0}={0})".format(var_str + '_id', '\t\t', '\n\t')
+            s = "{1}if {0}:{2}{1}query = query.filter({0}={0})".format(var_str, '    ', '\n    ')
         elif field_info['field'] == 'CharField' or field_info['field'] == 'TextField':
-            s = "{1}if {0}:{2}{1}query = query.filter({0}__icontains={0})".format(var_str, '\t\t', '\n\t')
+            s = "{1}if {0}:{2}{1}query = query.filter({0}__icontains={0})".format(var_str, '    ', '\n    ')
         else:
-            s = "{1}if {0}:{2}{1}query = query.filter({0}={0})".format(var_str, '\t\t', '\n\t')
+            s = "{1}if {0}:{2}{1}query = query.filter({0}={0})".format(var_str, '    ', '\n    ')
         var_if_dict['var_if_query'].append(s)
+
+    var_if_dict['var_if_common_str'] = '\n'.join(var_if_dict['var_if_common'])
+    var_if_dict['var_if_query_str'] = '\n'.join(var_if_dict['var_if_query'])
 
     return var_if_dict
 
 
 def get_param_check_dict(model_info_dict, field_info_dict, var_str_dict):
-    param_check_dict = {
-        'check_create_list': [],
-        'check_update_list': [],
-        'check_delete_list': [],
-        'check_recover_list': [],
-        'check_query_list': [],
-    }
+
     var_str_dict['var_create_list'] = var_str_dict['var_create_list'][1:-1]
     var_str_dict['var_update_list'] = var_str_dict['var_update_list'][1:-1]
     var_str_dict['var_delete_list'] = var_str_dict['var_delete_list'][1:-1]
     var_str_dict['var_recover_list'] = var_str_dict['var_recover_list'][1:-1]
     var_str_dict['var_query_list'] = var_str_dict['var_query_list'][1:-1]
 
-    param_check_dict['check_create_list'] = deal_check_func(var_str_dict['var_create_list'], field_info_dict,
-                                                            model_info_dict)
-    param_check_dict['check_update_list'] = deal_check_func(var_str_dict['var_update_list'], field_info_dict,
-                                                            model_info_dict)
+    param_check_dict = {
+        'check_create_list': deal_check_func(var_str_dict['var_create_list'], field_info_dict, model_info_dict),
+        'check_update_list': deal_check_func(var_str_dict['var_update_list'], field_info_dict, model_info_dict),
+        'check_delete_list': deal_check_func(var_str_dict['var_delete_list'], field_info_dict, model_info_dict),
+        'check_recover_list': deal_check_func(var_str_dict['var_recover_list'], field_info_dict, model_info_dict),
+        'check_query_list': deal_check_func(var_str_dict['var_query_list'], field_info_dict, model_info_dict)
+    }
+
+    param_str_start = ''
+    param_str_middle = ',\n                      '
+    param_str_end = ''
+    param_check_dict['check_create_str'] = deal_list_to_str(param_check_dict['check_create_list'], param_str_start, param_str_middle, param_str_end)
+    param_check_dict['check_update_str'] = deal_list_to_str(param_check_dict['check_update_list'], param_str_start, param_str_middle, param_str_end)
+    param_check_dict['check_delete_str'] = deal_list_to_str(param_check_dict['check_delete_list'], param_str_start, param_str_middle, param_str_end)
+    param_check_dict['check_recover_str'] = deal_list_to_str(param_check_dict['check_recover_list'], param_str_start, param_str_middle, param_str_end)
+    param_check_dict['check_query_str'] = deal_list_to_str(param_check_dict['check_query_list'], param_str_start, param_str_middle, param_str_end)
 
     return param_check_dict
+
 
 def process_check(para_list, model, model_low, model_str, app_name, model_upper, flag=0):
     lis = ['org_id=("组织id", "r,liyu_organization.Organization__pk")']
@@ -364,9 +371,10 @@ def process_check(para_list, model, model_low, model_str, app_name, model_upper,
         lis.append(s)
         s = """  page_size=("页大小", "int", 20)"""
         lis.append(s)
-    var_check = ',\n\t\t\t\t\t'.join(lis)
+    var_check = ',\n                    '.join(lis)
 
     return var_check
+
 
 def process_json(var_list):
     lis = []

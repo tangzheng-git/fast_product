@@ -1,19 +1,4 @@
-class Menu(BaseModel):
-    PLAT_PC = 10
-    PLAT_MOBILE = 20
-
-    PLAT_CHOICE = (
-        (PLAT_PC, 'PC端'),
-        (PLAT_MOBILE, '手机端'),
-    )
-
-    name = models.CharField(max_length=50, verbose_name=u'菜单名称')
-    platform = models.IntegerField(default=PLAT_PC, choices=PLAT_CHOICE, verbose_name=u"平台")
-    state = models.CharField(default="", max_length=100, verbose_name=u"路由")
-    index = models.FloatField(default=0, verbose_name=u"菜单索引")
-    parent = models.ForeignKey("liyu_permission.Menu", null=True, verbose_name=u"父级id")
-    is_menu = models.BooleanField(default=False, verbose_name=u'是否为菜单, 一级菜单为树,二级菜单为菜单')
-    orgs = models.ManyToManyField('liyu_organization.Organization', verbose_name=u"隶属组织")
-    urls = models.ManyToManyField('liyu_permission.ApiUrl', verbose_name=u"该菜单下url")
-    state_api_json = models.TextField(blank=True, null=True, default=None, verbose_name=u'路由接口信息json')
-    is_ok = models.BooleanField(default=True, verbose_name=u'隶属api是否有异常')
+class ApiUrl(BaseModel):
+    name = models.CharField(max_length=100, null=True, verbose_name=u'名称')
+    url = models.CharField(max_length=100, unique=True, verbose_name=u'绝对路径')
+    is_auth = models.BooleanField(default=False, verbose_name=u'是否需要授权')

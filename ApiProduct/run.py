@@ -5,13 +5,18 @@
 # Email:
 # Author: 唐政 
 
-from api_product.acquire import para_dict
-from api_product.acquire import write
+from ApiProduct.acquire import para_dict
+# from ApiProduct.acquire import write
 
 
 para_dict['app_name'] = 'zlsmart'
 para_dict['model_str'] = '基础元素含量'
 para_dict['user'] = '唐政'
 
-write(para_dict)
+print()
+for item in para_dict.items():
+    print(item)
+
+
+# write(para_dict)
 
