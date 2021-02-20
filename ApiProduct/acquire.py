@@ -18,7 +18,6 @@ import datetime
 
 DEBUG = False
 app_name = ""
-model_str = ""
 user = "唐政"
 var_dot = '"""'
 now = datetime.datetime.now().date()
