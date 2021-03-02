@@ -97,13 +97,19 @@
 #
 #
 # print(True, u'错误捆支数状态 < ProductItem#{} > need in {}'.format(1, [tup[0] for tup in ProductItem.BIND_STATUS_CHOICE]))
-import json
-state_api_json = json.dumps([])
+# import json
+# state_api_json = json.dumps([])
+#
+# state_api_json = json.loads(state_api_json)
+#
+# if state_api_json is not None:
+#     print(1)
+#     for api_dict in state_api_json:
+#         if api_dict['state'] != 1:
+#             pass
 
-state_api_json = json.loads(state_api_json)
+# s = 'Level_CHOICES'
+#
+# print(s.upper())
 
-if state_api_json is not None:
-    print(1)
-    for api_dict in state_api_json:
-        if api_dict['state'] != 1:
-            pass
+

@@ -17,28 +17,28 @@ def get_result_by_remote_consul_server(service_name, url, data_parms=None, timeo
     content_result = None
     # 线上/本地
     sessionid = 'd2y1607egdamfhm45ei8db8hwd3hjdi2'
-    # # # 切换精益行liyumes
-    # service_name_dict = {
-    #     # 线上
-    #     'liyumes': 'http://222.133.28.202:9094/',
-    #     # 本地
-    #     # 'liyumes': 'http://192.168.1.118:9000/',
-    #     # 'liyumes_offline': 'http://192.168.1.118:9000/',
-    #
-    #     # 不用管
-    #     'liyusf': 'http://222.133.28.202:9094/',
-    # }
-    # 切换熠之云kpi
+    # # 切换精益行liyumes
     service_name_dict = {
         # 线上
-        # 'jyx_kpi': 'http://211.142.91.46:9094/',
-
+        'liyumes': 'http://222.133.28.202:9094/',
         # 本地
-        'jyx_kpi': 'http://192.168.1.102:7000/',
+        # 'liyumes': 'http://192.168.1.118:9000/',
+        # 'liyumes_offline': 'http://192.168.1.118:9000/',
 
         # 不用管
-        'liyusf': 'http://211.142.91.46:9094/',
+        'liyusf': 'http://222.133.28.202:9094/',
     }
+    # # 切换熠之云kpi
+    # service_name_dict = {
+    #     # 线上
+    #     # 'jyx_kpi': 'http://211.142.91.46:9094/',
+    #
+    #     # 本地
+    #     'jyx_kpi': 'http://192.168.1.102:7000/',
+    #
+    #     # 不用管
+    #     'liyusf': 'http://211.142.91.46:9094/',
+    # }
 
     if service_name in service_name_dict.keys():
         base_url = service_name_dict[service_name]

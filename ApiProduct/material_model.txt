@@ -1,4 +1,5 @@
-class ApiUrl(BaseModel):
-    name = models.CharField(max_length=100, null=True, verbose_name=u'名称')
-    url = models.CharField(max_length=100, unique=True, verbose_name=u'绝对路径')
-    is_auth = models.BooleanField(default=False, verbose_name=u'是否需要授权')
+class User(BaseModel):
+    username = models.CharField(max_length=10, unique=True, verbose_name=u'用户名', help_text=u'用户名唯一')
+    name = models.CharField(max_length=10, blank=True, null=True, verbose_name=u'姓名', help_text=u'姓名可以重复 可以不填')
+    sex = models.BooleanField(default=True, verbose_name=u'性别', help_text=u'True为男 False为女')
+    password = models.CharField(max_length=16, verbose_name=u'密码', help_text=u'密码')
