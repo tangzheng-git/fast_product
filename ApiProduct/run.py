@@ -9,8 +9,8 @@ from ApiProduct.acquire import para_dict
 from ApiProduct.dosing import write
 
 
-para_dict['app_name'] = 'personage'
-para_dict['model_str'] = '用户'
+para_dict['app_name'] = 'zlsmart'
+para_dict['model_str'] = '配置信息表'
 para_dict['user'] = '唐政'
 
 # print()

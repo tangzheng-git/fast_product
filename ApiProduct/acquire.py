@@ -16,7 +16,7 @@ from ApiProduct import RAW_MATERIAL_FACTORY_MODEL
 from ApiProduct import api
 import datetime
 
-DEBUG = False
+DEBUG = True
 app_name = ""
 user = "唐政"
 var_dot = '"""'
@@ -104,7 +104,7 @@ para_dict = {
 }
 
 
-# with open('../views_{}.py'.format(para_dict['model_lower_str']), 'w+', encoding='UTF-8') as f:
-#     f.write(api.format(**para_dict))
+with open('../views_{}.py'.format(para_dict['model_lower_str']), 'w+', encoding='UTF-8') as f:
+    f.write(api.format(**para_dict))
 
 

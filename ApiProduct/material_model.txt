@@ -1,5 +1,6 @@
-class User(BaseModel):
-    username = models.CharField(max_length=10, unique=True, verbose_name=u'用户名', help_text=u'用户名唯一')
-    name = models.CharField(max_length=10, blank=True, null=True, verbose_name=u'姓名', help_text=u'姓名可以重复 可以不填')
-    sex = models.BooleanField(default=True, verbose_name=u'性别', help_text=u'True为男 False为女')
-    password = models.CharField(max_length=16, verbose_name=u'密码', help_text=u'密码')
+class ConstantSetting(BaseModel):
+    """
+    配置信息表
+    """
+    flag = models.CharField(max_length=100, unique=True, verbose_name=u'标记')
+    content = models.TextField(blank=True, null=True, verbose_name=u'json数据')
